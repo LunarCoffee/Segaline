@@ -1,0 +1,2 @@
+# Segaline
+Barebones web server.
