@@ -12,6 +12,7 @@ type Response struct {
 
 	Headers map[string]string
 	Body    []byte
+	Chunked bool
 }
 
 func New() *Response {
@@ -27,19 +28,21 @@ func (res *Response) WithStatus(status util.HttpStatusCode) *Response {
 }
 
 func (res *Response) WithHeader(name string, value string) *Response {
-	// TODO: percent encode these first, then you dont need the same check
-	if !util.IsVisibleString(name) || !util.IsValidHeaderValue(value) {
-		panic("invalid header")
-	}
+	name, value = util.PercentEncode(name), util.PercentEncode(value)
 	res.Headers[name] = value
 	return res
 }
 
 func (res *Response) WithBody(body []byte, mediaType util.HttpMediaType) *Response {
-	res.Body = body
-	return res.
-		WithHeader(util.ContentTypeHeader, string(mediaType)).
-		WithHeader(util.ContentLengthHeader, strconv.Itoa(len(body)))
+	res.WithHeader(util.ContentTypeHeader, string(mediaType))
+
+	if len(body) > util.MaxResponseSizeBeforeEncoding {
+		res.Chunked = true
+		return res.WithHeader(util.TransferEncodingHeader, "chunked")
+	} else {
+		res.Body = body
+		return res.WithHeader(util.ContentLengthHeader, strconv.Itoa(len(body)))
+	}
 }
 
 func (res *Response) AsBytes() []byte {

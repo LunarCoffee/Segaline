@@ -16,9 +16,7 @@ type requestParser struct {
 }
 
 func newRequestParser(reader *bufio.Reader) requestParser {
-	return requestParser{
-		reader: reader,
-	}
+	return requestParser{reader}
 }
 
 func (parser *requestParser) parse() (request Request, err error) {
@@ -107,6 +105,12 @@ func (parser *requestParser) parseHeaders() (headers map[string]string, err erro
 		value := strings.Trim(parts[1], optionalWhiteSpace)
 		if !util.IsVisibleString(name) || !util.IsValidHeaderValue(value) {
 			err = errors.New("invalid header")
+			return
+		}
+
+		_, ok := headers[name]
+		if ok {
+			err = errors.New("duplicate header")
 			return
 		}
 		headers[name] = value

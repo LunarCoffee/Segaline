@@ -2,6 +2,7 @@ package server
 
 import (
 	"bufio"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -54,10 +55,10 @@ func (server *FileServer) Stop() error {
 }
 
 func (server *FileServer) handleClient(conn net.Conn) {
-	writer := bufio.NewWriter(conn)
+	writer := bufio.NewWriterSize(conn, util.ResponseWriterBufferSize)
 	defer func() {
 		if err := conn.Close(); err != nil {
-			log.Println("An unexpected issue occurred while closing a client connection.")
+			log.Println("An issue occurred while closing a client connection.")
 		}
 	}()
 
@@ -70,6 +71,7 @@ func (server *FileServer) handleClient(conn net.Conn) {
 	pathString := req.Uri.PathString()
 	content, err := ioutil.ReadFile(server.fileRoot + pathString)
 	if err != nil {
+		fmt.Println(pathString)
 		respondStatus(writer, util.HttpStatusNotFound)
 		return
 	}
@@ -158,8 +160,12 @@ func respondStatus(writer *bufio.Writer, status util.HttpStatusCode) {
 }
 
 func respond(writer *bufio.Writer, res *response.Response) {
-	if err := writeFully(writer, res.AsBytes()); err != nil {
-		log.Println("An issue occurred while responding to a request.")
+	if res.Chunked {
+		// TODO:
+	} else {
+		if err := writeFully(writer, res.AsBytes()); err != nil {
+			log.Println("An issue occurred while responding to a request.")
+		}
 	}
 }
 

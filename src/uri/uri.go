@@ -57,13 +57,13 @@ func (uri *Uri) String() string {
 	var user, port, path, query string
 
 	if uri.user != "" {
-		user = uri.user + "@"
+		user = util.PercentEncode(uri.user + "@")
 	}
 	if uri.port > 0 {
 		port = ":" + strconv.Itoa(int(uri.port))
 	}
 
-	path = "/" + strings.Join(uri.path, "/")
+	path = "/" + util.PercentEncode(strings.Join(uri.path, "/"))
 	if len(uri.query) > 0 {
 		query = "?"
 		for name, value := range uri.query {
@@ -72,5 +72,5 @@ func (uri *Uri) String() string {
 		query = query[:len(query)-1]
 	}
 
-	return string(uri.scheme) + user + uri.host + port + path + query
+	return string(uri.scheme) + user + util.PercentEncode(uri.host) + port + path + util.PercentEncode(query)
 }

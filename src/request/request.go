@@ -17,8 +17,6 @@ type Request struct {
 }
 
 func Parse(reader io.Reader) (Request, error) {
-	// TODO: percent encoding
-
 	parser := newRequestParser(bufio.NewReader(reader))
 	return parser.parse()
 }
