@@ -34,18 +34,18 @@ func (res *Response) WithHeader(name string, value string) *Response {
 }
 
 func (res *Response) WithBody(body []byte, mediaType util.HttpMediaType) *Response {
+	res.Body = body
 	res.WithHeader(util.ContentTypeHeader, string(mediaType))
 
-	if len(body) > util.MaxResponseSizeBeforeEncoding {
+	if len(body) > util.ChunkSize {
 		res.Chunked = true
 		return res.WithHeader(util.TransferEncodingHeader, "chunked")
 	} else {
-		res.Body = body
 		return res.WithHeader(util.ContentLengthHeader, strconv.Itoa(len(body)))
 	}
 }
 
-func (res *Response) AsBytes() []byte {
+func (res *Response) AsBytesWithoutBody() []byte {
 	var httpVersion, headers string
 
 	switch res.HttpVersion {
@@ -63,6 +63,11 @@ func (res *Response) AsBytes() []byte {
 		headers += name + ": " + value + "\r\n"
 	}
 
-	str := fmt.Sprintf("%s %d\r\n%s\r\n%s", httpVersion, res.StatusCode, headers, res.Body)
+	str := fmt.Sprintf("%s %d\r\n%s\r\n", httpVersion, res.StatusCode, headers)
+	return []byte(str)
+}
+
+func (res *Response) AsBytes() []byte {
+	str := fmt.Sprintf("%s%s", res.AsBytesWithoutBody(), res.Body)
 	return []byte(str)
 }

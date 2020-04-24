@@ -19,6 +19,10 @@ func PercentEncode(str string) string {
 }
 
 func PercentDecode(str string) string {
+	if len(str) < 3 {
+		return str
+	}
+
 	decoded := ""
 	for index, char := 0, str[0]; index < len(str); index++ {
 		if char == '%' && index < len(str)-2 {

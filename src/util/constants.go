@@ -1,7 +1,7 @@
 package util
 
 const ResponseWriterBufferSize = 4_096
-const MaxResponseSizeBeforeEncoding = 32_768
+const ChunkSize = 8_192
 
 const HighestSupportedHttpVersion = HttpVersion11
 

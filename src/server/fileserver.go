@@ -79,7 +79,7 @@ func (server *FileServer) handleClient(conn net.Conn) {
 	log.Printf("%s %s %s\n", req.Method, &req.Uri, conn.RemoteAddr())
 
 	contentType := contentTypeByExt(pathString[strings.LastIndex(pathString, ".")+1:])
-	res := response.New().WithBody(content, contentType)
+	res := response.New().WithStatus(util.HttpStatusOK).WithBody(content, contentType)
 	respond(writer, res)
 }
 
@@ -161,11 +161,31 @@ func respondStatus(writer *bufio.Writer, status util.HttpStatusCode) {
 
 func respond(writer *bufio.Writer, res *response.Response) {
 	if res.Chunked {
-		// TODO:
-	} else {
-		if err := writeFully(writer, res.AsBytes()); err != nil {
-			log.Println("An issue occurred while responding to a request.")
+		writeFullyLog(writer, res.AsBytesWithoutBody())
+
+		written := 0
+		for written < len(res.Body)/util.ChunkSize*util.ChunkSize {
+			writeFullyLog(writer, []byte(fmt.Sprintf("%x\r\n", util.ChunkSize)))
+			writeFullyLog(writer, res.Body[written:written+util.ChunkSize])
+			writeFullyLog(writer, []byte("\r\n"))
+			flushLog(writer)
+			written += util.ChunkSize
 		}
+		writeFullyLog(writer, []byte(fmt.Sprintf("%x\n", len(res.Body)%util.ChunkSize)))
+		writeFullyLog(writer, res.Body[written:])
+		writeFullyLog(writer, []byte("\r\n"))
+
+		writeFullyLog(writer, []byte("0\r\n\r\n"))
+		flushLog(writer)
+	} else {
+		writeFullyLog(writer, res.AsBytes())
+		flushLog(writer)
+	}
+}
+
+func writeFullyLog(writer *bufio.Writer, bytes []byte) {
+	if err := writeFully(writer, bytes); err != nil {
+		log.Println("An issue occurred while responding to a request.")
 	}
 }
 
@@ -178,5 +198,11 @@ func writeFully(writer *bufio.Writer, bytes []byte) error {
 		}
 		written += n
 	}
-	return writer.Flush()
+	return nil
+}
+
+func flushLog(writer *bufio.Writer) {
+	if err := writer.Flush(); err != nil {
+		log.Println("An issue occurred while responding to a request.")
+	}
 }
