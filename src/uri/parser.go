@@ -16,7 +16,7 @@ var pathChars = regexp.MustCompile(`^[a-zA-Z\-._~%!$&'()*+,;=:@]*$`)
 var queryChars = regexp.MustCompile(`^[a-zA-Z\-._~%!$&'()*+,;=:@/?]*$`)
 
 func parseAbsoluteUri(raw string) (uri Uri, err error) {
-	if !strings.HasPrefix(raw, util.UriSchemeHttp+":") && !strings.HasPrefix(raw, util.UriSchemeHttps+":") {
+	if len(raw) < 5 || raw[:4] != string(util.UriSchemeHttp) && raw[:5] != string(util.UriSchemeHttps) {
 		err = errors.New("unsupported scheme")
 		return
 	}
@@ -35,7 +35,7 @@ func parseAbsoluteUri(raw string) (uri Uri, err error) {
 	var path []string
 	var query map[string]string
 
-	if raw[0:2] == "//" && len(raw) > 2 {
+	if len(raw) > 2 && raw[0:2] == "//" {
 		raw = raw[2:]
 		pathStart := strings.Index(raw, "/")
 		if pathStart > 0 {

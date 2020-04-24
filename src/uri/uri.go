@@ -20,6 +20,11 @@ type Uri struct {
 }
 
 func Parse(method util.HttpMethod, raw string) (uri Uri, err error) {
+	if len(raw) > util.RequestMaxURILength {
+		err = errors.New(util.ErrorRequestURILengthExceeded)
+		return
+	}
+
 	if raw == "*" && method == util.HttpMethodOptions {
 		return Uri{
 			form:   util.UriFormAsterisk,

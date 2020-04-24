@@ -39,3 +39,75 @@ func PercentDecode(str string) string {
 	}
 	return decoded
 }
+
+func ContentTypeByExt(ext string) HttpMediaType {
+	switch ext {
+	case "aac":
+		return HttpMediaTypeAAC
+	case "avi":
+		return HttpMediaTypeAVI
+	case "bmp":
+		return HttpMediaTypeBitmap
+	case "css":
+		return HttpMediaTypeCSS
+	case "csv":
+		return HttpMediaTypeCSV
+	case "epub":
+		return HttpMediaTypeEPUB
+	case "gz":
+		return HttpMediaTypeGZip
+	case "gif":
+		return HttpMediaTypeGIF
+	case "htm", "html":
+		return HttpMediaTypeHTML
+	case "ico":
+		return HttpMediaTypeIcon
+	case "jpg", "jpeg":
+		return HttpMediaTypeJPEG
+	case "js":
+		return HttpMediaTypeJavaScript
+	case "json":
+		return HttpMediaTypeJSON
+	case "mp3":
+		return HttpMediaTypeMP3
+	case "mp4":
+		return HttpMediaTypeMP4
+	case "oga":
+		return HttpMediaTypeOGGAudio
+	case "png":
+		return HttpMediaTypePNG
+	case "pdf":
+		return HttpMediaTypePDF
+	case "php":
+		return HttpMediaTypePHP
+	case "rtf":
+		return HttpMediaTypeRTF
+	case "svg":
+		return HttpMediaTypeSVG
+	case "swf":
+		return HttpMediaTypeSWF
+	case "ttf":
+		return HttpMediaTypeTTF
+	case "txt":
+		return HttpMediaTypeText
+	case "wav":
+		return HttpMediaTypeWAV
+	case "weba":
+		return HttpMediaTypeWEBMAudio
+	case "webm":
+		return HttpMediaTypeWEBMVideo
+	case "webp":
+		return HttpMediaTypeWEBPImage
+	case "woff":
+		return HttpMediaTypeWOFF
+	case "woff2":
+		return HttpMediaTypeWOFF2
+	case "xhtml":
+		return HttpMediaTypeXHTML
+	case "xml":
+		return HttpMediaTypeXML
+	case "zip":
+		return HttpMediaTypeZip
+	}
+	return HttpMediaTypeBinary
+}

@@ -1,10 +1,30 @@
 package util
 
-const ResponseWriterBufferSize = 4_096
-const ChunkSize = 8_192
+const (
+	RequestMaxContentLength = 65_536
+	RequestMaxURILength     = 32_768
+)
 
-const HighestSupportedHttpVersion = HttpVersion11
+const (
+	ResponseWriterBufferSize = 4_096
+	ResponseChunkSize        = 4_096
+	ResponseMaxUnchunkedBody = 8 * ResponseChunkSize
+)
 
-const ContentLengthHeader = "Content-Length"
-const ContentTypeHeader = "Content-Type"
-const TransferEncodingHeader = "Transfer-Encoding"
+const (
+	DefaultEmptyRequestTarget = "/index.html"
+	DefaultHttpVersion        = HttpVersion11
+)
+
+const (
+	HeaderHost             = "Host"
+	HeaderConnection       = "Connection"
+	HeaderContentLength    = "Content-Length"
+	HeaderContentType      = "Content-Type"
+	HeaderTransferEncoding = "Transfer-Encoding"
+)
+
+const (
+	ErrorContentLengthExceeded    = "content length maximum exceeded"
+	ErrorRequestURILengthExceeded = "request uri length maximum exceeded"
+)

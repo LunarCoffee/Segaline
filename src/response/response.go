@@ -1,7 +1,9 @@
 package response
 
 import (
+	"bufio"
 	"fmt"
+	"log"
 	"segaline/src/util"
 	"strconv"
 )
@@ -17,8 +19,8 @@ type Response struct {
 
 func New() *Response {
 	return &Response{
-		HttpVersion: util.HighestSupportedHttpVersion,
-		Headers:     map[string]string{},
+		HttpVersion: util.DefaultHttpVersion,
+		Headers:     map[string]string{util.HeaderConnection: "close"}, // TODO: support keep-alive?
 	}
 }
 
@@ -35,39 +37,79 @@ func (res *Response) WithHeader(name string, value string) *Response {
 
 func (res *Response) WithBody(body []byte, mediaType util.HttpMediaType) *Response {
 	res.Body = body
-	res.WithHeader(util.ContentTypeHeader, string(mediaType))
+	res.WithHeader(util.HeaderContentType, string(mediaType))
 
-	if len(body) > util.ChunkSize {
+	if len(body) > util.ResponseMaxUnchunkedBody {
 		res.Chunked = true
-		return res.WithHeader(util.TransferEncodingHeader, "chunked")
+		return res.WithHeader(util.HeaderTransferEncoding, "chunked") // TODO
 	} else {
-		return res.WithHeader(util.ContentLengthHeader, strconv.Itoa(len(body)))
+		return res.WithHeader(util.HeaderContentLength, strconv.Itoa(len(body)))
 	}
 }
 
 func (res *Response) AsBytesWithoutBody() []byte {
-	var httpVersion, headers string
-
-	switch res.HttpVersion {
-	case util.HttpVersion09:
-		httpVersion = "HTTP/0.9"
-	case util.HttpVersion10:
-		httpVersion = "HTTP/1.0"
-	case util.HttpVersion11:
-		httpVersion = "HTTP/1.1"
-	case util.HttpVersion20:
-		httpVersion = "HTTP/2.0"
-	}
-
+	headers := ""
 	for name, value := range res.Headers {
 		headers += name + ": " + value + "\r\n"
 	}
 
-	str := fmt.Sprintf("%s %d\r\n%s\r\n", httpVersion, res.StatusCode, headers)
+	str := fmt.Sprintf("%s %d\r\n%s\r\n", res.HttpVersion, res.StatusCode, headers)
 	return []byte(str)
 }
 
 func (res *Response) AsBytes() []byte {
 	str := fmt.Sprintf("%s%s", res.AsBytesWithoutBody(), res.Body)
 	return []byte(str)
+}
+
+func RespondStatus(writer *bufio.Writer, status util.HttpStatusCode) {
+	New().WithStatus(status).Respond(writer)
+}
+
+func (res *Response) Respond(writer *bufio.Writer) {
+	if res.Chunked {
+		writeFullyLog(writer, res.AsBytesWithoutBody())
+
+		chunkSize := util.ResponseChunkSize
+		written := 0
+		for written < len(res.Body)/chunkSize*chunkSize {
+			buf := []byte(fmt.Sprintf("%x\r\n%s\r\n", chunkSize, res.Body[written:written+chunkSize]))
+			writeFullyLog(writer, buf)
+			flushLog(writer)
+			written += chunkSize
+		}
+
+		buf := []byte(fmt.Sprintf("%x\r\n%s\r\n0\r\n\r\n", len(res.Body)%chunkSize, res.Body[written:]))
+		writeFullyLog(writer, buf)
+		flushLog(writer)
+	} else {
+		writeFullyLog(writer, res.AsBytes())
+		flushLog(writer)
+	}
+}
+
+func writeFullyLog(writer *bufio.Writer, bytes []byte) int {
+	written, err := writeFully(writer, bytes)
+	if err != nil {
+		log.Println("An issue occurred while responding to a request.")
+	}
+	return written
+}
+
+func writeFully(writer *bufio.Writer, bytes []byte) (int, error) {
+	written := 0
+	for written < len(bytes) {
+		n, err := writer.Write(bytes[written:])
+		if err != nil {
+			return written, err
+		}
+		written += n
+	}
+	return written, nil
+}
+
+func flushLog(writer *bufio.Writer) {
+	if err := writer.Flush(); err != nil {
+		log.Println("An issue occurred while responding to a request.")
+	}
 }

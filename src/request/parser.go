@@ -43,23 +43,10 @@ func (parser *requestParser) parseRequestLine() (m util.HttpMethod, u uri.Uri, v
 		return
 	}
 
-	switch parts[0] {
-	case "GET":
-		m = util.HttpMethodGet
-	case "HEAD":
-		m = util.HttpMethodHead
-	case "POST":
-		m = util.HttpMethodPost
-	case "PUT":
-		m = util.HttpMethodPut
-	case "DELETE":
-		m = util.HttpMethodDelete
-	case "CONNECT":
-		m = util.HttpMethodConnect
-	case "OPTIONS":
-		m = util.HttpMethodOptions
-	case "TRACE":
-		m = util.HttpMethodTrace
+	m = util.HttpMethod(parts[0])
+	switch m {
+	case util.HttpMethodGet, util.HttpMethodHead, util.HttpMethodPost, util.HttpMethodPut, util.HttpMethodDelete,
+		util.HttpMethodConnect, util.HttpMethodOptions, util.HttpMethodTrace:
 	default:
 		err = errors.New("invalid method")
 		return
@@ -70,17 +57,11 @@ func (parser *requestParser) parseRequestLine() (m util.HttpMethod, u uri.Uri, v
 		return
 	}
 
-	switch parts[2] {
-	case "HTTP/0.9":
-		v = util.HttpVersion09
-	case "HTTP/1.0":
-		v = util.HttpVersion10
-	case "HTTP/1.1":
-		v = util.HttpVersion11
-	case "HTTP/2.0":
-		v = util.HttpVersion20
+	v = util.HttpVersion(parts[2])
+	switch v {
+	case util.HttpVersion09, util.HttpVersion10, util.HttpVersion11:
 	default:
-		err = errors.New("invalid http version")
+		err = errors.New("unsupported http version")
 		return
 	}
 	return
@@ -115,16 +96,23 @@ func (parser *requestParser) parseHeaders() (headers map[string]string, err erro
 		}
 		headers[name] = value
 	}
+
+	if _, ok := headers[util.HeaderHost]; !ok {
+		err = errors.New("missing host header")
+	}
 	return
 }
 
 func (parser *requestParser) parseBody(headers map[string]string) (body []byte, err error) {
-	if _, ok := headers[util.TransferEncodingHeader]; ok {
+	if _, ok := headers[util.HeaderTransferEncoding]; ok {
 		// TODO:
-	} else if contentLength, ok := headers[util.ContentLengthHeader]; ok {
+	} else if contentLength, ok := headers[util.HeaderContentLength]; ok {
 		contentLength, err := strconv.Atoi(contentLength)
 		if err != nil {
 			return nil, err
+		}
+		if contentLength > util.RequestMaxContentLength {
+			return nil, errors.New(util.ErrorContentLengthExceeded)
 		}
 
 		totalRead := 0

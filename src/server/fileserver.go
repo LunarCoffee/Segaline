@@ -62,147 +62,51 @@ func (server *FileServer) handleClient(conn net.Conn) {
 		}
 	}()
 
-	req, err := request.Parse(conn)
-	if err != nil {
-		respondStatus(writer, util.HttpStatusBadRequest)
+	req, ok := parseRequest(conn, writer)
+	if !ok {
 		return
 	}
 
 	pathString := req.Uri.PathString()
+	if pathString == "/" {
+		pathString = util.DefaultEmptyRequestTarget
+	}
 	content, err := ioutil.ReadFile(server.fileRoot + pathString)
 	if err != nil {
 		fmt.Println(pathString)
-		respondStatus(writer, util.HttpStatusNotFound)
+		response.RespondStatus(writer, util.HttpStatusNotFound)
 		return
 	}
 
+	contentType := util.ContentTypeByExt(pathString[strings.LastIndex(pathString, ".")+1:])
+	res := response.New().WithStatus(util.HttpStatusOK)
+	if req.Method == util.HttpMethodGet {
+		res.WithBody(content, contentType)
+	}
+
+	res.Respond(writer)
 	log.Printf("%s %s %s\n", req.Method, &req.Uri, conn.RemoteAddr())
-
-	contentType := contentTypeByExt(pathString[strings.LastIndex(pathString, ".")+1:])
-	res := response.New().WithStatus(util.HttpStatusOK).WithBody(content, contentType)
-	respond(writer, res)
 }
 
-func contentTypeByExt(ext string) util.HttpMediaType {
-	switch ext {
-	case "aac":
-		return util.HttpMediaTypeAAC
-	case "avi":
-		return util.HttpMediaTypeAVI
-	case "bmp":
-		return util.HttpMediaTypeBitmap
-	case "css":
-		return util.HttpMediaTypeCSS
-	case "csv":
-		return util.HttpMediaTypeCSV
-	case "epub":
-		return util.HttpMediaTypeEPUB
-	case "gz":
-		return util.HttpMediaTypeGZip
-	case "gif":
-		return util.HttpMediaTypeGIF
-	case "htm", "html":
-		return util.HttpMediaTypeHTML
-	case "ico":
-		return util.HttpMediaTypeIcon
-	case "jpg", "jpeg":
-		return util.HttpMediaTypeJPEG
-	case "js":
-		return util.HttpMediaTypeJavaScript
-	case "json":
-		return util.HttpMediaTypeJSON
-	case "mp3":
-		return util.HttpMediaTypeMP3
-	case "mp4":
-		return util.HttpMediaTypeMP4
-	case "oga":
-		return util.HttpMediaTypeOGGAudio
-	case "png":
-		return util.HttpMediaTypePNG
-	case "pdf":
-		return util.HttpMediaTypePDF
-	case "php":
-		return util.HttpMediaTypePHP
-	case "rtf":
-		return util.HttpMediaTypeRTF
-	case "svg":
-		return util.HttpMediaTypeSVG
-	case "swf":
-		return util.HttpMediaTypeSWF
-	case "ttf":
-		return util.HttpMediaTypeTTF
-	case "txt":
-		return util.HttpMediaTypeText
-	case "wav":
-		return util.HttpMediaTypeWAV
-	case "weba":
-		return util.HttpMediaTypeWEBMAudio
-	case "webm":
-		return util.HttpMediaTypeWEBMVideo
-	case "webp":
-		return util.HttpMediaTypeWEBPImage
-	case "woff":
-		return util.HttpMediaTypeWOFF
-	case "woff2":
-		return util.HttpMediaTypeWOFF2
-	case "xhtml":
-		return util.HttpMediaTypeXHTML
-	case "xml":
-		return util.HttpMediaTypeXML
-	case "zip":
-		return util.HttpMediaTypeZip
-	}
-	return util.HttpMediaTypeBinary
-}
+func parseRequest(conn net.Conn, writer *bufio.Writer) (req request.Request, ok bool) {
+	var err error
+	req, err = request.Parse(conn)
 
-func respondStatus(writer *bufio.Writer, status util.HttpStatusCode) {
-	respond(writer, response.New().WithStatus(status))
-}
-
-func respond(writer *bufio.Writer, res *response.Response) {
-	if res.Chunked {
-		writeFullyLog(writer, res.AsBytesWithoutBody())
-
-		written := 0
-		for written < len(res.Body)/util.ChunkSize*util.ChunkSize {
-			writeFullyLog(writer, []byte(fmt.Sprintf("%x\r\n", util.ChunkSize)))
-			writeFullyLog(writer, res.Body[written:written+util.ChunkSize])
-			writeFullyLog(writer, []byte("\r\n"))
-			flushLog(writer)
-			written += util.ChunkSize
+	if err == nil {
+		if req.Method != util.HttpMethodGet && req.Method != util.HttpMethodHead {
+			response.RespondStatus(writer, util.HttpStatusMethodNotAllowed)
+		} else {
+			ok = true
 		}
-		writeFullyLog(writer, []byte(fmt.Sprintf("%x\n", len(res.Body)%util.ChunkSize)))
-		writeFullyLog(writer, res.Body[written:])
-		writeFullyLog(writer, []byte("\r\n"))
-
-		writeFullyLog(writer, []byte("0\r\n\r\n"))
-		flushLog(writer)
 	} else {
-		writeFullyLog(writer, res.AsBytes())
-		flushLog(writer)
-	}
-}
-
-func writeFullyLog(writer *bufio.Writer, bytes []byte) {
-	if err := writeFully(writer, bytes); err != nil {
-		log.Println("An issue occurred while responding to a request.")
-	}
-}
-
-func writeFully(writer *bufio.Writer, bytes []byte) error {
-	written := 0
-	for written < len(bytes) {
-		n, err := writer.Write(bytes[written:])
-		if err != nil {
-			return err
+		switch err.Error() {
+		case util.ErrorContentLengthExceeded:
+			response.RespondStatus(writer, util.HttpStatusPayloadTooLarge)
+		case util.ErrorRequestURILengthExceeded:
+			response.RespondStatus(writer, util.HttpStatusRequestURITooLong)
+		default:
+			response.RespondStatus(writer, util.HttpStatusBadRequest)
 		}
-		written += n
 	}
-	return nil
-}
-
-func flushLog(writer *bufio.Writer) {
-	if err := writer.Flush(); err != nil {
-		log.Println("An issue occurred while responding to a request.")
-	}
+	return
 }

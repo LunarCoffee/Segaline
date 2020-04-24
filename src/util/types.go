@@ -2,18 +2,18 @@ package util
 
 type HttpMethod string
 type HttpStatusCode int
-type HttpVersion float64
+type HttpVersion string
 type HttpMediaType string
 
 const (
 	HttpMethodGet     HttpMethod = "GET"
-	HttpMethodHead               = "HEAD"
-	HttpMethodPost               = "POST"
-	HttpMethodPut                = "PUT"
-	HttpMethodDelete             = "DELETE"
-	HttpMethodConnect            = "CONNECT"
-	HttpMethodOptions            = "OPTIONS"
-	HttpMethodTrace              = "TRACE"
+	HttpMethodHead    HttpMethod = "HEAD"
+	HttpMethodPost    HttpMethod = "POST"
+	HttpMethodPut     HttpMethod = "PUT"
+	HttpMethodDelete  HttpMethod = "DELETE"
+	HttpMethodConnect HttpMethod = "CONNECT"
+	HttpMethodOptions HttpMethod = "OPTIONS"
+	HttpMethodTrace   HttpMethod = "TRACE"
 )
 
 const (
@@ -95,47 +95,46 @@ const (
 )
 
 const (
-	HttpVersion09 HttpVersion = 0.9
-	HttpVersion10             = 1.0
-	HttpVersion11             = 1.1
-	HttpVersion20             = 2.0
+	HttpVersion09 HttpVersion = "HTTP/0.9"
+	HttpVersion10 HttpVersion = "HTTP/1.0"
+	HttpVersion11 HttpVersion = "HTTP/1.1"
 )
 
 const (
 	HttpMediaTypeAAC        HttpMediaType = "audio/aac"
-	HttpMediaTypeAVI                      = "video/x-msvideo"
-	HttpMediaTypeBinary                   = "application/octet-stream"
-	HttpMediaTypeBitmap                   = "image/bmp"
-	HttpMediaTypeCSS                      = "text/css"
-	HttpMediaTypeCSV                      = "text/csv"
-	HttpMediaTypeEPUB                     = "application/epub+zip"
-	HttpMediaTypeGZip                     = "application/gzip"
-	HttpMediaTypeGIF                      = "image/gif"
-	HttpMediaTypeHTML                     = "text/html"
-	HttpMediaTypeIcon                     = "image/vnd.microsoft.icon"
-	HttpMediaTypeJPEG                     = "image/jpeg"
-	HttpMediaTypeJavaScript               = "text/javascript"
-	HttpMediaTypeJSON                     = "application/json"
-	HttpMediaTypeMP3                      = "audio/mpeg"
-	HttpMediaTypeMP4                      = "video/mp4"
-	HttpMediaTypeOGGAudio                 = "audio/ogg"
-	HttpMediaTypePNG                      = "image/png"
-	HttpMediaTypePDF                      = "application/pdf"
-	HttpMediaTypePHP                      = "application/php"
-	HttpMediaTypeRTF                      = "application/rtf"
-	HttpMediaTypeSVG                      = "image/svg+xml"
-	HttpMediaTypeSWF                      = "application/x-shockwave-flash"
-	HttpMediaTypeTTF                      = "font/ttf"
-	HttpMediaTypeText                     = "text/plain"
-	HttpMediaTypeWAV                      = "audio/wav"
-	HttpMediaTypeWEBMAudio                = "audio/webm"
-	HttpMediaTypeWEBMVideo                = "video/webm"
-	HttpMediaTypeWEBPImage                = "image/webp"
-	HttpMediaTypeWOFF                     = "font/woff"
-	HttpMediaTypeWOFF2                    = "font/woff2"
-	HttpMediaTypeXHTML                    = "application/xhtml+xml"
-	HttpMediaTypeXML                      = "application/xml"
-	HttpMediaTypeZip                      = "application/zip"
+	HttpMediaTypeAVI        HttpMediaType = "video/x-msvideo"
+	HttpMediaTypeBinary     HttpMediaType = "application/octet-stream"
+	HttpMediaTypeBitmap     HttpMediaType = "image/bmp"
+	HttpMediaTypeCSS        HttpMediaType = "text/css"
+	HttpMediaTypeCSV        HttpMediaType = "text/csv"
+	HttpMediaTypeEPUB       HttpMediaType = "application/epub+zip"
+	HttpMediaTypeGZip       HttpMediaType = "application/gzip"
+	HttpMediaTypeGIF        HttpMediaType = "image/gif"
+	HttpMediaTypeHTML       HttpMediaType = "text/html"
+	HttpMediaTypeIcon       HttpMediaType = "image/vnd.microsoft.icon"
+	HttpMediaTypeJPEG       HttpMediaType = "image/jpeg"
+	HttpMediaTypeJavaScript HttpMediaType = "text/javascript"
+	HttpMediaTypeJSON       HttpMediaType = "application/json"
+	HttpMediaTypeMP3        HttpMediaType = "audio/mpeg"
+	HttpMediaTypeMP4        HttpMediaType = "video/mp4"
+	HttpMediaTypeOGGAudio   HttpMediaType = "audio/ogg"
+	HttpMediaTypePNG        HttpMediaType = "image/png"
+	HttpMediaTypePDF        HttpMediaType = "application/pdf"
+	HttpMediaTypePHP        HttpMediaType = "application/php"
+	HttpMediaTypeRTF        HttpMediaType = "application/rtf"
+	HttpMediaTypeSVG        HttpMediaType = "image/svg+xml"
+	HttpMediaTypeSWF        HttpMediaType = "application/x-shockwave-flash"
+	HttpMediaTypeTTF        HttpMediaType = "font/ttf"
+	HttpMediaTypeText       HttpMediaType = "text/plain"
+	HttpMediaTypeWAV        HttpMediaType = "audio/wav"
+	HttpMediaTypeWEBMAudio  HttpMediaType = "audio/webm"
+	HttpMediaTypeWEBMVideo  HttpMediaType = "video/webm"
+	HttpMediaTypeWEBPImage  HttpMediaType = "image/webp"
+	HttpMediaTypeWOFF       HttpMediaType = "font/woff"
+	HttpMediaTypeWOFF2      HttpMediaType = "font/woff2"
+	HttpMediaTypeXHTML      HttpMediaType = "application/xhtml+xml"
+	HttpMediaTypeXML        HttpMediaType = "application/xml"
+	HttpMediaTypeZip        HttpMediaType = "application/zip"
 )
 
 type UriForm int
@@ -149,6 +148,6 @@ const (
 )
 
 const (
-	UriSchemeHttp  = "http"
-	UriSchemeHttps = "https"
+	UriSchemeHttp  UriScheme = "http"
+	UriSchemeHttps UriScheme = "https"
 )
