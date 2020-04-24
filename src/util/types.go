@@ -4,6 +4,8 @@ type HttpMethod string
 type HttpStatusCode int
 type HttpVersion string
 type HttpMediaType string
+type HttpConnection string
+type HttpTransferEncoding string
 
 const (
 	HttpMethodGet     HttpMethod = "GET"
@@ -135,6 +137,19 @@ const (
 	HttpMediaTypeXHTML      HttpMediaType = "application/xhtml+xml"
 	HttpMediaTypeXML        HttpMediaType = "application/xml"
 	HttpMediaTypeZip        HttpMediaType = "application/zip"
+)
+
+const (
+	HttpConnectionClose     HttpConnection = "close"
+	HttpConnectionKeepAlive HttpConnection = "keep-alive"
+)
+
+const (
+	HttpTransferEncodingChunked HttpTransferEncoding = "chunked"
+	HttpTransferEncodingCompress HttpTransferEncoding = "compress"
+	HttpTransferEncodingIdentity HttpTransferEncoding = "identity"
+	HttpTransferEncodingDeflate HttpTransferEncoding = "deflate"
+	HttpTransferEncodingGZip HttpTransferEncoding = "gzip"
 )
 
 type UriForm int

@@ -20,7 +20,7 @@ type Response struct {
 func New() *Response {
 	return &Response{
 		HttpVersion: util.DefaultHttpVersion,
-		Headers:     map[string]string{util.HeaderConnection: "close"}, // TODO: support keep-alive?
+		Headers:     map[string]string{util.HeaderContentLength: "0"},
 	}
 }
 
@@ -35,13 +35,20 @@ func (res *Response) WithHeader(name string, value string) *Response {
 	return res
 }
 
+func (res *Response) WithoutHeader(name string) *Response {
+	delete(res.Headers, util.PercentEncode(name))
+	return res
+}
+
 func (res *Response) WithBody(body []byte, mediaType util.HttpMediaType) *Response {
 	res.Body = body
 	res.WithHeader(util.HeaderContentType, string(mediaType))
 
 	if len(body) > util.ResponseMaxUnchunkedBody {
 		res.Chunked = true
-		return res.WithHeader(util.HeaderTransferEncoding, "chunked") // TODO
+		return res.
+			WithoutHeader(util.HeaderContentLength).
+			WithHeader(util.HeaderTransferEncoding, string(util.HttpTransferEncodingChunked))
 	} else {
 		return res.WithHeader(util.HeaderContentLength, strconv.Itoa(len(body)))
 	}
@@ -62,8 +69,12 @@ func (res *Response) AsBytes() []byte {
 	return []byte(str)
 }
 
-func RespondStatus(writer *bufio.Writer, status util.HttpStatusCode) {
-	New().WithStatus(status).Respond(writer)
+func RespondStatus(writer *bufio.Writer, status util.HttpStatusCode, closeConnection bool) {
+	res := New().WithStatus(status)
+	if closeConnection {
+		res.WithHeader(util.HeaderConnection, string(util.HttpConnectionClose))
+	}
+	res.Respond(writer)
 }
 
 func (res *Response) Respond(writer *bufio.Writer) {

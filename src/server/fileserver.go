@@ -2,7 +2,6 @@ package server
 
 import (
 	"bufio"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -55,37 +54,33 @@ func (server *FileServer) Stop() error {
 }
 
 func (server *FileServer) handleClient(conn net.Conn) {
+	defer closeConnectionLog(conn)
 	writer := bufio.NewWriterSize(conn, util.ResponseWriterBufferSize)
-	defer func() {
-		if err := conn.Close(); err != nil {
-			log.Println("An issue occurred while closing a client connection.")
+
+	for req, ok := parseRequest(conn, writer); ok; req, ok = parseRequest(conn, writer) {
+		pathString := req.Uri.PathString()
+		if pathString == "/" {
+			pathString = util.DefaultEmptyRequestTarget
 		}
-	}()
+		content, err := ioutil.ReadFile(server.fileRoot + pathString)
+		if err != nil {
+			response.RespondStatus(writer, util.HttpStatusNotFound, false)
+			continue
+		}
 
-	req, ok := parseRequest(conn, writer)
-	if !ok {
-		return
-	}
+		contentType := util.ContentTypeByExt(pathString[strings.LastIndex(pathString, ".")+1:])
+		res := response.New().WithStatus(util.HttpStatusOK)
+		if req.Method == util.HttpMethodGet {
+			res.WithBody(content, contentType)
+		}
 
-	pathString := req.Uri.PathString()
-	if pathString == "/" {
-		pathString = util.DefaultEmptyRequestTarget
-	}
-	content, err := ioutil.ReadFile(server.fileRoot + pathString)
-	if err != nil {
-		fmt.Println(pathString)
-		response.RespondStatus(writer, util.HttpStatusNotFound)
-		return
-	}
+		res.Respond(writer)
+		log.Printf("%s %s %s\n", req.Method, &req.Uri, conn.RemoteAddr())
 
-	contentType := util.ContentTypeByExt(pathString[strings.LastIndex(pathString, ".")+1:])
-	res := response.New().WithStatus(util.HttpStatusOK)
-	if req.Method == util.HttpMethodGet {
-		res.WithBody(content, contentType)
+		if req.WillCloseConnection() {
+			break
+		}
 	}
-
-	res.Respond(writer)
-	log.Printf("%s %s %s\n", req.Method, &req.Uri, conn.RemoteAddr())
 }
 
 func parseRequest(conn net.Conn, writer *bufio.Writer) (req request.Request, ok bool) {
@@ -94,19 +89,27 @@ func parseRequest(conn net.Conn, writer *bufio.Writer) (req request.Request, ok 
 
 	if err == nil {
 		if req.Method != util.HttpMethodGet && req.Method != util.HttpMethodHead {
-			response.RespondStatus(writer, util.HttpStatusMethodNotAllowed)
+			response.RespondStatus(writer, util.HttpStatusMethodNotAllowed, true)
 		} else {
 			ok = true
 		}
 	} else {
+		var status util.HttpStatusCode
 		switch err.Error() {
 		case util.ErrorContentLengthExceeded:
-			response.RespondStatus(writer, util.HttpStatusPayloadTooLarge)
+			status = util.HttpStatusPayloadTooLarge
 		case util.ErrorRequestURILengthExceeded:
-			response.RespondStatus(writer, util.HttpStatusRequestURITooLong)
+			status = util.HttpStatusRequestURITooLong
 		default:
-			response.RespondStatus(writer, util.HttpStatusBadRequest)
+			status = util.HttpStatusBadRequest
 		}
+		response.RespondStatus(writer, status, true)
 	}
 	return
+}
+
+func closeConnectionLog(conn net.Conn) {
+	if err := conn.Close(); err != nil {
+		log.Println("An issue occurred while closing a client connection.")
+	}
 }
