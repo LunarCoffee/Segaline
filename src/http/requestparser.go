@@ -1,10 +1,9 @@
-package request
+package http
 
 import (
 	"bufio"
 	"errors"
-	"segaline/src/response"
-	"segaline/src/uri"
+	"net"
 	"segaline/src/util"
 	"strconv"
 	"strings"
@@ -16,42 +15,50 @@ const optionalWhiteSpace = " \t"
 type requestParser struct {
 	reader *bufio.Reader
 	writer *bufio.Writer
+
+	method  Method
+	uri     Uri
+	headers map[string]string
 }
 
 func newRequestParser(reader *bufio.Reader, writer *bufio.Writer) requestParser {
-	return requestParser{reader, writer}
+	return requestParser{
+		reader: reader,
+		writer: writer,
+	}
 }
 
-func (parser *requestParser) parse() (request Request, err error) {
-	method, reqUri, httpVersion, err := parser.parseRequestLine()
+func (parser *requestParser) parse(addr net.Addr) (request Request, err error) {
+	var httpVersion Version
+	parser.method, parser.uri, httpVersion, err = parser.parseRequestLine()
 	if err != nil {
 		return
 	}
 
-	headers, err := parser.parseHeaders()
+	parser.headers, err = parser.parseHeaders()
 	if err != nil {
 		return
 	}
-	if _, ok := headers[string(util.HeaderHost)]; !ok {
+	if _, ok := parser.headers[string(HeaderHost)]; !ok {
 		err = errors.New("missing host header")
 	}
 
 	// Trailer headers are checked for duplication but are ultimately ignored (as with most implementations).
-	body, trailer, err := parser.parseBody(headers)
+	body, trailer, err := parser.parseBody()
 	if err != nil {
 		return
 	}
 	for key := range trailer {
-		if _, ok := headers[key]; ok {
+		if _, ok := parser.headers[key]; ok {
 			err = errors.New("duplicate header in trailer")
 			return
 		}
 	}
 
-	return Request{method, reqUri, httpVersion, headers, body}, nil
+	return Request{parser.method, parser.uri, httpVersion, parser.headers, body, addr}, nil
 }
 
-func (parser *requestParser) parseRequestLine() (m util.HttpMethod, u uri.Uri, v util.HttpVersion, err error) {
+func (parser *requestParser) parseRequestLine() (m Method, u Uri, v Version, err error) {
 	line, err := parser.readLine()
 	if err != nil {
 		return
@@ -62,23 +69,22 @@ func (parser *requestParser) parseRequestLine() (m util.HttpMethod, u uri.Uri, v
 		return
 	}
 
-	m = util.HttpMethod(parts[0])
+	m = Method(parts[0])
 	switch m {
-	case util.MethodGet, util.MethodHead, util.MethodPost, util.MethodPut, util.MethodDelete, util.MethodConnect,
-		util.MethodOptions, util.MethodTrace:
+	case MethodGet, MethodHead, MethodPost, MethodPut, MethodDelete, MethodConnect, MethodOptions, MethodTrace:
 	default:
-		err = errors.New("invalid method")
+		err = errors.New(util.ErrorUnsupportedMethod)
 		return
 	}
 
-	u, err = uri.Parse(m, parts[1])
+	u, err = ParseUri(m, parts[1])
 	if err != nil {
 		return
 	}
 
-	v = util.HttpVersion(parts[2])
+	v = Version(parts[2])
 	switch v {
-	case util.Version09, util.Version10, util.Version11:
+	case Version09, Version10, Version11:
 	default:
 		err = errors.New("unsupported http version")
 		return
@@ -101,9 +107,9 @@ func (parser *requestParser) parseHeaders() (headers map[string]string, err erro
 			return
 		}
 
-		name := util.NormalizeCase(parts[0])
-		value := strings.Trim(util.NormalizeCase(parts[1]), optionalWhiteSpace)
-		if !util.IsVisibleString(name) || !util.IsValidHeaderValue(value) {
+		name := normalizeCase(parts[0])
+		value := strings.Trim(normalizeCase(parts[1]), optionalWhiteSpace)
+		if !isVisibleString(name) || !isValidHeaderValue(value) {
 			err = errors.New("invalid header")
 			return
 		}
@@ -117,18 +123,18 @@ func (parser *requestParser) parseHeaders() (headers map[string]string, err erro
 	return
 }
 
-func (parser *requestParser) parseBody(headers map[string]string) (body []byte, trailer map[string]string, err error) {
+func (parser *requestParser) parseBody() (body []byte, trailer map[string]string, err error) {
 	trailer = map[string]string{}
 
-	if rawEncodings, ok := headers[string(util.HeaderTransferEncoding)]; ok {
-		if rawEncodings != string(util.TransferEncodingChunked) {
+	if rawEncodings, ok := parser.headers[string(HeaderTransferEncoding)]; ok {
+		if rawEncodings != string(TransferEncodingHeaderChunked) {
 			err = errors.New(util.ErrorUnsupportedTransferEncoding)
 			return
 		}
 
-		parser.sendContinue(headers)
+		parser.sendContinue()
 		body, trailer, err = parser.readChunked()
-	} else if contentLength, ok := headers[string(util.HeaderContentLength)]; ok {
+	} else if contentLength, ok := parser.headers[string(HeaderContentLength)]; ok {
 		var length int
 		length, err = strconv.Atoi(contentLength)
 		if err != nil {
@@ -139,7 +145,7 @@ func (parser *requestParser) parseBody(headers map[string]string) (body []byte, 
 			return
 		}
 
-		parser.sendContinue(headers)
+		parser.sendContinue()
 		body, err = parser.readBytesFully(length)
 	}
 	return
@@ -245,8 +251,21 @@ func (parser *requestParser) rawReadTimeout(f func() ([]byte, bool, error)) (lin
 	return
 }
 
-func (parser *requestParser) sendContinue(headers map[string]string) {
-	if value := headers[string(util.HeaderExpect)]; strings.EqualFold(value, string(util.HttpExpectContinue)) {
-		response.RespondStatus(parser.writer, util.StatusContinue, false)
+func (parser *requestParser) sendContinue() {
+	if value := parser.headers[string(HeaderExpect)]; strings.EqualFold(value, string(ExpectHeaderContinue)) {
+		parser.respondStatus(parser.writer, StatusContinue, false)
 	}
+}
+
+func (parser *requestParser) respondStatus(writer *bufio.Writer, status StatusCode, closeConnection bool) {
+	req := Request{
+		Method: parser.method,
+		Uri:    parser.uri,
+	}
+
+	res := NewResponse(&req).WithStatus(status)
+	if closeConnection {
+		res.WithHeader(HeaderConnection, string(ConnectionHeaderClose))
+	}
+	res.Respond(writer)
 }

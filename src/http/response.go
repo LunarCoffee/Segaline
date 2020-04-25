@@ -1,4 +1,4 @@
-package response
+package http
 
 import (
 	"bufio"
@@ -6,56 +6,61 @@ import (
 	"log"
 	"segaline/src/util"
 	"strconv"
+	"time"
 )
 
 type Response struct {
-	HttpVersion util.HttpVersion
-	StatusCode  util.HttpStatusCode
+	HttpVersion Version
+	StatusCode  StatusCode
 
-	Headers map[util.HttpHeader]string
+	Headers map[Header]string
 	Body    []byte
 	Chunked bool
+
+	request *Request
 }
 
-func New() *Response {
+func NewResponse(req *Request) *Response {
 	return &Response{
-		HttpVersion: util.DefaultHttpVersion,
-		Headers: map[util.HttpHeader]string{
-			util.HeaderContentLength: "0",
-			util.HeaderServer:        util.ServerNameVersion,
+		HttpVersion: Version11,
+		Headers: map[Header]string{
+			HeaderContentLength: "0",
+			HeaderServer:        util.ServerNameVersion,
+			HeaderDate:          formatTimeGMT(time.Now()),
 		},
+		request: req,
 	}
 }
 
-func (res *Response) WithStatus(status util.HttpStatusCode) *Response {
+func (res *Response) WithStatus(status StatusCode) *Response {
 	res.StatusCode = status
 	if int(status) < 200 || int(status) == 204 {
-		delete(res.Headers, util.HeaderContentLength)
+		res.WithoutHeader(HeaderContentLength)
 	}
 	return res
 }
 
-func (res *Response) WithHeader(header util.HttpHeader, value string) *Response {
+func (res *Response) WithHeader(header Header, value string) *Response {
 	res.Headers[header] = value
 	return res
 }
 
-func (res *Response) WithoutHeader(header util.HttpHeader) *Response {
+func (res *Response) WithoutHeader(header Header) *Response {
 	delete(res.Headers, header)
 	return res
 }
 
-func (res *Response) WithBody(body []byte, mediaType util.HttpMediaType) *Response {
+func (res *Response) WithBody(body []byte, mediaType MediaType) *Response {
 	res.Body = body
-	res.WithHeader(util.HeaderContentType, string(mediaType))
+	res.WithHeader(HeaderContentType, string(mediaType))
 
 	if len(body) > util.ResponseMaxUnchunkedBody {
 		res.Chunked = true
 		return res.
-			WithoutHeader(util.HeaderContentLength).
-			WithHeader(util.HeaderTransferEncoding, string(util.TransferEncodingChunked))
+			WithoutHeader(HeaderContentLength).
+			WithHeader(HeaderTransferEncoding, string(TransferEncodingHeaderChunked))
 	} else {
-		return res.WithHeader(util.HeaderContentLength, strconv.Itoa(len(body)))
+		return res.WithHeader(HeaderContentLength, strconv.Itoa(len(body)))
 	}
 }
 
@@ -94,14 +99,10 @@ func (res *Response) Respond(writer *bufio.Writer) {
 		writeFullyLog(writer, res.AsBytes())
 		flushLog(writer)
 	}
-}
 
-func RespondStatus(writer *bufio.Writer, status util.HttpStatusCode, closeConnection bool) {
-	res := New().WithStatus(status)
-	if closeConnection {
-		res.WithHeader(util.HeaderConnection, string(util.ConnectionClose))
+	if res.StatusCode != StatusRequestTimeout {
+		log.Printf("(%d) %s %s %s\n", res.StatusCode, res.request.Method, &res.request.Uri, res.request.RemoteAddr)
 	}
-	res.Respond(writer)
 }
 
 func writeFullyLog(writer *bufio.Writer, bytes []byte) int {

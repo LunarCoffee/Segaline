@@ -1,4 +1,4 @@
-package uri
+package http
 
 import (
 	"errors"
@@ -8,9 +8,9 @@ import (
 )
 
 type Uri struct {
-	form util.UriForm
+	form Form
 
-	scheme util.UriScheme
+	scheme Scheme
 	user   string
 	host   string
 	port   uint16
@@ -19,37 +19,37 @@ type Uri struct {
 	query map[string]string
 }
 
-func Parse(method util.HttpMethod, raw string) (uri Uri, err error) {
+func ParseUri(method Method, raw string) (uri Uri, err error) {
 	if len(raw) > util.RequestMaxURILength {
 		err = errors.New(util.ErrorRequestURILengthExceeded)
 		return
 	}
 
-	if raw == "*" && method == util.MethodOptions {
+	if raw == "*" && method == MethodOptions {
 		return Uri{
-			form:   util.UriFormAsterisk,
-			scheme: util.UriSchemeHttp,
+			form:   FormAsterisk,
+			scheme: SchemeHttp,
 		}, nil
 	}
 
-	if method == util.MethodConnect {
+	if method == MethodConnect {
 		uri.user, uri.host, uri.port, err = parseAuthority(raw)
 		if uri.user != "" {
 			return uri, errors.New("authority with user info in connect request")
 		}
-		uri.form = util.UriFormAuthority
+		uri.form = FormAuthority
 	} else if strings.HasPrefix(raw, "http:") || strings.HasPrefix(raw, "https:") {
 		uri, err = parseAbsoluteUri(raw)
 		if err != nil {
 			return
 		}
-		uri.form = util.UriFormAbsolute
+		uri.form = FormAbsolute
 	} else if strings.HasPrefix(raw, "/") {
 		uri.path, uri.query, err = parseAbsolutePathWithQuery(raw)
 		if err != nil {
 			return
 		}
-		uri.form = util.UriFormOrigin
+		uri.form = FormOrigin
 	}
 	return
 }
@@ -62,13 +62,13 @@ func (uri *Uri) String() string {
 	var user, port, path, query string
 
 	if uri.user != "" {
-		user = util.EncodePercent(uri.user + "@")
+		user = encodePercent(uri.user + "@")
 	}
 	if uri.port > 0 {
 		port = ":" + strconv.Itoa(int(uri.port))
 	}
 
-	path = "/" + util.EncodePercent(strings.Join(uri.path, "/"))
+	path = "/" + encodePercent(strings.Join(uri.path, "/"))
 	if len(uri.query) > 0 {
 		query = "?"
 		for name, value := range uri.query {
@@ -77,5 +77,5 @@ func (uri *Uri) String() string {
 		query = query[:len(query)-1]
 	}
 
-	return string(uri.scheme) + user + util.EncodePercent(uri.host) + port + path + util.EncodePercent(query)
+	return string(uri.scheme) + user + encodePercent(uri.host) + port + path + encodePercent(query)
 }

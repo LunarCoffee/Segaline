@@ -1,32 +1,32 @@
-package request
+package http
 
 import (
 	"bufio"
 	"fmt"
 	"net"
-	"segaline/src/uri"
-	"segaline/src/util"
 )
 
 type Request struct {
-	Method      util.HttpMethod
-	Uri         uri.Uri
-	HttpVersion util.HttpVersion
+	Method      Method
+	Uri         Uri
+	HttpVersion Version
 
 	Headers map[string]string
 	Body    []byte
+
+	RemoteAddr net.Addr
 }
 
-func Parse(conn net.Conn) (Request, error) {
+func ParseRequest(conn net.Conn) (Request, error) {
 	parser := newRequestParser(bufio.NewReader(conn), bufio.NewWriter(conn))
-	return parser.parse()
+	return parser.parse(conn.RemoteAddr())
 }
 
 func (req *Request) WillCloseConnection() bool {
-	value, ok := req.Headers[string(util.HeaderConnection)]
-	hasClose := ok && value == string(util.ConnectionClose)
-	isKeepAlive := req.HttpVersion == util.Version10 && ok && value == string(util.ConnectionKeepAlive)
-	return hasClose || req.HttpVersion < util.Version11 && !isKeepAlive
+	value, ok := req.Headers[string(HeaderConnection)]
+	hasClose := ok && value == string(ConnectionHeaderClose)
+	isKeepAlive := req.HttpVersion == Version10 && ok && value == string(ConnectionHeaderKeepAlive)
+	return hasClose || req.HttpVersion < Version11 && !isKeepAlive
 }
 
 func (req *Request) AsBytes() []byte {

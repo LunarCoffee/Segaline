@@ -1,10 +1,9 @@
-package uri
+package http
 
 import (
 	"errors"
 	"math"
 	"regexp"
-	"segaline/src/util"
 	"strconv"
 	"strings"
 )
@@ -16,17 +15,17 @@ var pathChars = regexp.MustCompile(`^[a-zA-Z\-._~%!$&'()*+,;=:@]*$`)
 var queryChars = regexp.MustCompile(`^[a-zA-Z\-._~%!$&'()*+,;=:@/?]*$`)
 
 func parseAbsoluteUri(raw string) (uri Uri, err error) {
-	if len(raw) < 5 || raw[:4] != string(util.UriSchemeHttp) && raw[:5] != string(util.UriSchemeHttps) {
+	if len(raw) < 5 || raw[:4] != string(SchemeHttp) && raw[:5] != string(SchemeHttps) {
 		err = errors.New("unsupported scheme")
 		return
 	}
 
-	var scheme util.UriScheme
+	var scheme Scheme
 	switch raw[4] {
 	case ':':
-		scheme = util.UriSchemeHttp
+		scheme = SchemeHttp
 	case 's':
-		scheme = util.UriSchemeHttps
+		scheme = SchemeHttps
 	}
 
 	raw = raw[strings.Index(raw, ":")+1:]
@@ -53,7 +52,7 @@ func parseAbsoluteUri(raw string) (uri Uri, err error) {
 		path, query, err = parseAbsolutePathWithQuery("/" + raw)
 	}
 
-	uri = Uri{util.UriFormAbsolute, scheme, user, host, port, path, query}
+	uri = Uri{FormAbsolute, scheme, user, host, port, path, query}
 	return
 }
 
@@ -67,7 +66,7 @@ func parseAuthority(raw string) (user string, host string, port uint16, err erro
 			err = errors.New("invalid user info")
 			return
 		}
-		user = util.DecodePercent(userAndRest[0])
+		user = decodePercent(userAndRest[0])
 		rest = userAndRest[1]
 	}
 
@@ -89,7 +88,7 @@ func parseAuthority(raw string) (user string, host string, port uint16, err erro
 	if !isHostName(host) && !isIPAddress(host) {
 		err = errors.New("invalid host")
 	}
-	host = util.DecodePercent(host)
+	host = decodePercent(host)
 	return
 }
 
@@ -113,7 +112,7 @@ func parseAbsolutePathWithQuery(raw string) (path []string, query map[string]str
 			err = errors.New("invalid or unsupported path segment")
 			return
 		}
-		path = append(path, util.DecodePercent(part))
+		path = append(path, decodePercent(part))
 	}
 
 	if len(stringQuery) == 0 {
@@ -127,7 +126,7 @@ func parseAbsolutePathWithQuery(raw string) (path []string, query map[string]str
 			err = errors.New("invalid query parameter")
 			return
 		}
-		query[util.DecodePercent(nameAndValue[0])] = util.DecodePercent(nameAndValue[1])
+		query[decodePercent(nameAndValue[0])] = decodePercent(nameAndValue[1])
 	}
 	return
 }
