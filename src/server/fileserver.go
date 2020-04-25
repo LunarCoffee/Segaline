@@ -100,6 +100,10 @@ func parseRequest(conn net.Conn, writer *bufio.Writer) (req request.Request, ok 
 			status = util.HttpStatusPayloadTooLarge
 		case util.ErrorRequestURILengthExceeded:
 			status = util.HttpStatusRequestURITooLong
+		case util.ErrorUnsupportedTransferEncoding:
+			status = util.HttpStatusNotImplemented
+		case util.ErrorTimeoutReached:
+			status = util.HttpStatusRequestTimeout
 		default:
 			status = util.HttpStatusBadRequest
 		}

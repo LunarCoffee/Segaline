@@ -6,6 +6,7 @@ type HttpVersion string
 type HttpMediaType string
 type HttpConnection string
 type HttpTransferEncoding string
+type HttpExpect string
 
 const (
 	HttpMethodGet     HttpMethod = "GET"
@@ -145,12 +146,14 @@ const (
 )
 
 const (
-	HttpTransferEncodingChunked HttpTransferEncoding = "chunked"
+	HttpTransferEncodingChunked  HttpTransferEncoding = "chunked"
 	HttpTransferEncodingCompress HttpTransferEncoding = "compress"
 	HttpTransferEncodingIdentity HttpTransferEncoding = "identity"
-	HttpTransferEncodingDeflate HttpTransferEncoding = "deflate"
-	HttpTransferEncodingGZip HttpTransferEncoding = "gzip"
+	HttpTransferEncodingDeflate  HttpTransferEncoding = "deflate"
+	HttpTransferEncodingGZip     HttpTransferEncoding = "gzip"
 )
+
+const HttpExpectContinue HttpExpect = "100-continue"
 
 type UriForm int
 type UriScheme string

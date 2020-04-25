@@ -26,17 +26,20 @@ func New() *Response {
 
 func (res *Response) WithStatus(status util.HttpStatusCode) *Response {
 	res.StatusCode = status
+	if int(status) < 200 || int(status) == 204 {
+		delete(res.Headers, util.HeaderContentLength)
+	}
 	return res
 }
 
 func (res *Response) WithHeader(name string, value string) *Response {
-	name, value = util.PercentEncode(name), util.PercentEncode(value)
+	name, value = util.EncodePercent(name), util.EncodePercent(value)
 	res.Headers[name] = value
 	return res
 }
 
 func (res *Response) WithoutHeader(name string) *Response {
-	delete(res.Headers, util.PercentEncode(name))
+	delete(res.Headers, util.EncodePercent(name))
 	return res
 }
 

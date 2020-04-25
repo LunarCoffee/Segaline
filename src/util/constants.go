@@ -1,5 +1,13 @@
 package util
 
+import "time"
+
+const (
+	DefaultEmptyRequestTarget = "/index.html"
+	DefaultHttpVersion        = HttpVersion11
+	DefaultReadTimeout        = 10 * time.Second
+)
+
 const (
 	RequestMaxContentLength = 65_536
 	RequestMaxURILength     = 32_768
@@ -12,19 +20,17 @@ const (
 )
 
 const (
-	DefaultEmptyRequestTarget = "/index.html"
-	DefaultHttpVersion        = HttpVersion11
+	HeaderHost             = "host"
+	HeaderConnection       = "connection"
+	HeaderContentLength    = "content-length"
+	HeaderContentType      = "content-type"
+	HeaderTransferEncoding = "transfer-encoding"
+	HeaderExpect           = "expect"
 )
 
 const (
-	HeaderHost             = "Host"
-	HeaderConnection       = "Connection"
-	HeaderContentLength    = "Content-Length"
-	HeaderContentType      = "Content-Type"
-	HeaderTransferEncoding = "Transfer-Encoding"
-)
-
-const (
-	ErrorContentLengthExceeded    = "content length maximum exceeded"
-	ErrorRequestURILengthExceeded = "request uri length maximum exceeded"
+	ErrorContentLengthExceeded       = "content length maximum exceeded"
+	ErrorRequestURILengthExceeded    = "request uri length maximum exceeded"
+	ErrorUnsupportedTransferEncoding = "unsupported transfer encoding"
+	ErrorTimeoutReached              = "timeout reached"
 )

@@ -67,7 +67,7 @@ func parseAuthority(raw string) (user string, host string, port uint16, err erro
 			err = errors.New("invalid user info")
 			return
 		}
-		user = util.PercentDecode(userAndRest[0])
+		user = util.DecodePercent(userAndRest[0])
 		rest = userAndRest[1]
 	}
 
@@ -89,7 +89,7 @@ func parseAuthority(raw string) (user string, host string, port uint16, err erro
 	if !isHostName(host) && !isIPAddress(host) {
 		err = errors.New("invalid host")
 	}
-	host = util.PercentDecode(host)
+	host = util.DecodePercent(host)
 	return
 }
 
@@ -113,7 +113,7 @@ func parseAbsolutePathWithQuery(raw string) (path []string, query map[string]str
 			err = errors.New("invalid or unsupported path segment")
 			return
 		}
-		path = append(path, util.PercentDecode(part))
+		path = append(path, util.DecodePercent(part))
 	}
 
 	if len(stringQuery) == 0 {
@@ -127,7 +127,7 @@ func parseAbsolutePathWithQuery(raw string) (path []string, query map[string]str
 			err = errors.New("invalid query parameter")
 			return
 		}
-		query[util.PercentDecode(nameAndValue[0])] = util.PercentDecode(nameAndValue[1])
+		query[util.DecodePercent(nameAndValue[0])] = util.DecodePercent(nameAndValue[1])
 	}
 	return
 }

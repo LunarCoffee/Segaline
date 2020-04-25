@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 )
 
-func PercentEncode(str string) string {
+func EncodePercent(str string) string {
 	encoded := ""
 	for _, char := range str {
 		if !isVisibleChar(char) && char >= 0 && char <= math.MaxUint8 {
@@ -18,7 +19,7 @@ func PercentEncode(str string) string {
 	return encoded
 }
 
-func PercentDecode(str string) string {
+func DecodePercent(str string) string {
 	if len(str) < 3 {
 		return str
 	}
@@ -38,6 +39,10 @@ func PercentDecode(str string) string {
 		}
 	}
 	return decoded
+}
+
+func NormalizeCase(str string) string {
+	return strings.ToLower(str)
 }
 
 func ContentTypeByExt(ext string) HttpMediaType {

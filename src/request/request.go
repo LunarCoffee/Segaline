@@ -2,7 +2,7 @@ package request
 
 import (
 	"bufio"
-	"io"
+	"net"
 	"segaline/src/uri"
 	"segaline/src/util"
 )
@@ -16,8 +16,8 @@ type Request struct {
 	Body    []byte
 }
 
-func Parse(reader io.Reader) (Request, error) {
-	parser := newRequestParser(bufio.NewReader(reader))
+func Parse(conn net.Conn) (Request, error) {
+	parser := newRequestParser(bufio.NewReader(conn), bufio.NewWriter(conn))
 	return parser.parse()
 }
 
