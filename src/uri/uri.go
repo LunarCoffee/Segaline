@@ -25,14 +25,14 @@ func Parse(method util.HttpMethod, raw string) (uri Uri, err error) {
 		return
 	}
 
-	if raw == "*" && method == util.HttpMethodOptions {
+	if raw == "*" && method == util.MethodOptions {
 		return Uri{
 			form:   util.UriFormAsterisk,
 			scheme: util.UriSchemeHttp,
 		}, nil
 	}
 
-	if method == util.HttpMethodConnect {
+	if method == util.MethodConnect {
 		uri.user, uri.host, uri.port, err = parseAuthority(raw)
 		if uri.user != "" {
 			return uri, errors.New("authority with user info in connect request")

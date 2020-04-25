@@ -2,6 +2,7 @@ package request
 
 import (
 	"bufio"
+	"fmt"
 	"net"
 	"segaline/src/uri"
 	"segaline/src/util"
@@ -22,8 +23,18 @@ func Parse(conn net.Conn) (Request, error) {
 }
 
 func (req *Request) WillCloseConnection() bool {
-	value, ok := req.Headers[util.HeaderConnection]
-	hasClose := ok && value == string(util.HttpConnectionClose)
-	isKeepAlive := req.HttpVersion == util.HttpVersion10 && ok && value == string(util.HttpConnectionKeepAlive)
-	return hasClose || req.HttpVersion < util.HttpVersion11 && !isKeepAlive
+	value, ok := req.Headers[string(util.HeaderConnection)]
+	hasClose := ok && value == string(util.ConnectionClose)
+	isKeepAlive := req.HttpVersion == util.Version10 && ok && value == string(util.ConnectionKeepAlive)
+	return hasClose || req.HttpVersion < util.Version11 && !isKeepAlive
+}
+
+func (req *Request) AsBytes() []byte {
+	headers := ""
+	for name, value := range req.Headers {
+		headers += name + ": " + value + "\r\n"
+	}
+
+	str := fmt.Sprintf("%s %s %s\r\n%s\r\n%s", req.Method, &req.Uri, req.HttpVersion, headers, req.Body)
+	return []byte(str)
 }

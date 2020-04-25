@@ -3,9 +3,16 @@ package util
 import "time"
 
 const (
-	DefaultEmptyRequestTarget = "/index.html"
-	DefaultHttpVersion        = HttpVersion11
-	DefaultReadTimeout        = 10 * time.Second
+	ServerName        = "Segaline"
+	ServerVersion     = "0.1.0"
+	ServerNameVersion = ServerName + "/" + ServerVersion
+)
+
+const (
+	DefaultEmptyRequestTarget    = "/index.html"
+	DefaultHttpVersion           = Version11
+	DefaultReadTimeout           = 10 * time.Second
+	DefaultFallbackErrorTemplate = "{statusCode} - {serverInfo}"
 )
 
 const (
@@ -17,15 +24,7 @@ const (
 	ResponseWriterBufferSize = 4_096
 	ResponseChunkSize        = 4_096
 	ResponseMaxUnchunkedBody = 8 * ResponseChunkSize
-)
-
-const (
-	HeaderHost             = "host"
-	HeaderConnection       = "connection"
-	HeaderContentLength    = "content-length"
-	HeaderContentType      = "content-type"
-	HeaderTransferEncoding = "transfer-encoding"
-	HeaderExpect           = "expect"
+	ResponseTimeFormat       = "Mon, 02 Jan 2006 15:04:05"
 )
 
 const (

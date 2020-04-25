@@ -32,7 +32,7 @@ func (parser *requestParser) parse() (request Request, err error) {
 	if err != nil {
 		return
 	}
-	if _, ok := headers[util.HeaderHost]; !ok {
+	if _, ok := headers[string(util.HeaderHost)]; !ok {
 		err = errors.New("missing host header")
 	}
 
@@ -64,8 +64,8 @@ func (parser *requestParser) parseRequestLine() (m util.HttpMethod, u uri.Uri, v
 
 	m = util.HttpMethod(parts[0])
 	switch m {
-	case util.HttpMethodGet, util.HttpMethodHead, util.HttpMethodPost, util.HttpMethodPut, util.HttpMethodDelete,
-		util.HttpMethodConnect, util.HttpMethodOptions, util.HttpMethodTrace:
+	case util.MethodGet, util.MethodHead, util.MethodPost, util.MethodPut, util.MethodDelete, util.MethodConnect,
+		util.MethodOptions, util.MethodTrace:
 	default:
 		err = errors.New("invalid method")
 		return
@@ -78,7 +78,7 @@ func (parser *requestParser) parseRequestLine() (m util.HttpMethod, u uri.Uri, v
 
 	v = util.HttpVersion(parts[2])
 	switch v {
-	case util.HttpVersion09, util.HttpVersion10, util.HttpVersion11:
+	case util.Version09, util.Version10, util.Version11:
 	default:
 		err = errors.New("unsupported http version")
 		return
@@ -114,21 +114,21 @@ func (parser *requestParser) parseHeaders() (headers map[string]string, err erro
 		}
 		headers[name] = value
 	}
-
-	parser.sendContinue(headers)
 	return
 }
 
 func (parser *requestParser) parseBody(headers map[string]string) (body []byte, trailer map[string]string, err error) {
 	trailer = map[string]string{}
 
-	if rawEncodings, ok := headers[util.HeaderTransferEncoding]; ok {
-		if rawEncodings != string(util.HttpTransferEncodingChunked) {
+	if rawEncodings, ok := headers[string(util.HeaderTransferEncoding)]; ok {
+		if rawEncodings != string(util.TransferEncodingChunked) {
 			err = errors.New(util.ErrorUnsupportedTransferEncoding)
 			return
 		}
+
+		parser.sendContinue(headers)
 		body, trailer, err = parser.readChunked()
-	} else if contentLength, ok := headers[util.HeaderContentLength]; ok {
+	} else if contentLength, ok := headers[string(util.HeaderContentLength)]; ok {
 		var length int
 		length, err = strconv.Atoi(contentLength)
 		if err != nil {
@@ -138,6 +138,8 @@ func (parser *requestParser) parseBody(headers map[string]string) (body []byte, 
 			err = errors.New(util.ErrorContentLengthExceeded)
 			return
 		}
+
+		parser.sendContinue(headers)
 		body, err = parser.readBytesFully(length)
 	}
 	return
@@ -244,7 +246,7 @@ func (parser *requestParser) rawReadTimeout(f func() ([]byte, bool, error)) (lin
 }
 
 func (parser *requestParser) sendContinue(headers map[string]string) {
-	if value := headers[util.HeaderExpect]; value == string(util.HttpExpectContinue) {
-		response.RespondStatus(parser.writer, util.HttpStatusContinue, false)
+	if value := headers[string(util.HeaderExpect)]; strings.EqualFold(value, string(util.HttpExpectContinue)) {
+		response.RespondStatus(parser.writer, util.StatusContinue, false)
 	}
 }

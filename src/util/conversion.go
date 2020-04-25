@@ -1,10 +1,13 @@
 package util
 
 import (
+	"crypto/sha1"
+	"encoding/base32"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func EncodePercent(str string) string {
@@ -45,74 +48,90 @@ func NormalizeCase(str string) string {
 	return strings.ToLower(str)
 }
 
+func GetETag(content []byte) string {
+	sha := sha1.New()
+	sha.Write(content)
+	return base32.HexEncoding.EncodeToString(sha.Sum(nil))
+}
+
+func FormatTimeGMT(time time.Time) string {
+	time = time.UTC()
+	return time.Format(ResponseTimeFormat) + " GMT"
+}
+
+func FormatErrorTemplate(template string, status HttpStatusCode) string {
+	statusReplaced := strings.ReplaceAll(template, "{statusCode}", strconv.Itoa(int(status)))
+	return strings.ReplaceAll(statusReplaced, "{serverInfo}", ServerNameVersion)
+}
+
 func ContentTypeByExt(ext string) HttpMediaType {
 	switch ext {
 	case "aac":
-		return HttpMediaTypeAAC
+		return MediaTypeAAC
 	case "avi":
-		return HttpMediaTypeAVI
+		return MediaTypeAVI
 	case "bmp":
-		return HttpMediaTypeBitmap
+		return MediaTypeBitmap
 	case "css":
-		return HttpMediaTypeCSS
+		return MediaTypeCSS
 	case "csv":
-		return HttpMediaTypeCSV
+		return MediaTypeCSV
 	case "epub":
-		return HttpMediaTypeEPUB
+		return MediaTypeEPUB
 	case "gz":
-		return HttpMediaTypeGZip
+		return MediaTypeGZip
 	case "gif":
-		return HttpMediaTypeGIF
+		return MediaTypeGIF
 	case "htm", "html":
-		return HttpMediaTypeHTML
+		return MediaTypeHTML
 	case "ico":
-		return HttpMediaTypeIcon
+		return MediaTypeIcon
 	case "jpg", "jpeg":
-		return HttpMediaTypeJPEG
+		return MediaTypeJPEG
 	case "js":
-		return HttpMediaTypeJavaScript
+		return MediaTypeJavaScript
 	case "json":
-		return HttpMediaTypeJSON
+		return MediaTypeJSON
 	case "mp3":
-		return HttpMediaTypeMP3
+		return MediaTypeMP3
 	case "mp4":
-		return HttpMediaTypeMP4
+		return MediaTypeMP4
 	case "oga":
-		return HttpMediaTypeOGGAudio
+		return MediaTypeOGGAudio
 	case "png":
-		return HttpMediaTypePNG
+		return MediaTypePNG
 	case "pdf":
-		return HttpMediaTypePDF
+		return MediaTypePDF
 	case "php":
-		return HttpMediaTypePHP
+		return MediaTypePHP
 	case "rtf":
-		return HttpMediaTypeRTF
+		return MediaTypeRTF
 	case "svg":
-		return HttpMediaTypeSVG
+		return MediaTypeSVG
 	case "swf":
-		return HttpMediaTypeSWF
+		return MediaTypeSWF
 	case "ttf":
-		return HttpMediaTypeTTF
+		return MediaTypeTTF
 	case "txt":
-		return HttpMediaTypeText
+		return MediaTypeText
 	case "wav":
-		return HttpMediaTypeWAV
+		return MediaTypeWAV
 	case "weba":
-		return HttpMediaTypeWEBMAudio
+		return MediaTypeWEBMAudio
 	case "webm":
-		return HttpMediaTypeWEBMVideo
+		return MediaTypeWEBMVideo
 	case "webp":
-		return HttpMediaTypeWEBPImage
+		return MediaTypeWEBPImage
 	case "woff":
-		return HttpMediaTypeWOFF
+		return MediaTypeWOFF
 	case "woff2":
-		return HttpMediaTypeWOFF2
+		return MediaTypeWOFF2
 	case "xhtml":
-		return HttpMediaTypeXHTML
+		return MediaTypeXHTML
 	case "xml":
-		return HttpMediaTypeXML
+		return MediaTypeXML
 	case "zip":
-		return HttpMediaTypeZip
+		return MediaTypeZip
 	}
-	return HttpMediaTypeBinary
+	return MediaTypeBinary
 }

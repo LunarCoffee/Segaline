@@ -12,7 +12,7 @@ type Response struct {
 	HttpVersion util.HttpVersion
 	StatusCode  util.HttpStatusCode
 
-	Headers map[string]string
+	Headers map[util.HttpHeader]string
 	Body    []byte
 	Chunked bool
 }
@@ -20,7 +20,10 @@ type Response struct {
 func New() *Response {
 	return &Response{
 		HttpVersion: util.DefaultHttpVersion,
-		Headers:     map[string]string{util.HeaderContentLength: "0"},
+		Headers: map[util.HttpHeader]string{
+			util.HeaderContentLength: "0",
+			util.HeaderServer:        util.ServerNameVersion,
+		},
 	}
 }
 
@@ -32,14 +35,13 @@ func (res *Response) WithStatus(status util.HttpStatusCode) *Response {
 	return res
 }
 
-func (res *Response) WithHeader(name string, value string) *Response {
-	name, value = util.EncodePercent(name), util.EncodePercent(value)
-	res.Headers[name] = value
+func (res *Response) WithHeader(header util.HttpHeader, value string) *Response {
+	res.Headers[header] = value
 	return res
 }
 
-func (res *Response) WithoutHeader(name string) *Response {
-	delete(res.Headers, util.EncodePercent(name))
+func (res *Response) WithoutHeader(header util.HttpHeader) *Response {
+	delete(res.Headers, header)
 	return res
 }
 
@@ -51,7 +53,7 @@ func (res *Response) WithBody(body []byte, mediaType util.HttpMediaType) *Respon
 		res.Chunked = true
 		return res.
 			WithoutHeader(util.HeaderContentLength).
-			WithHeader(util.HeaderTransferEncoding, string(util.HttpTransferEncodingChunked))
+			WithHeader(util.HeaderTransferEncoding, string(util.TransferEncodingChunked))
 	} else {
 		return res.WithHeader(util.HeaderContentLength, strconv.Itoa(len(body)))
 	}
@@ -60,7 +62,7 @@ func (res *Response) WithBody(body []byte, mediaType util.HttpMediaType) *Respon
 func (res *Response) AsBytesWithoutBody() []byte {
 	headers := ""
 	for name, value := range res.Headers {
-		headers += name + ": " + value + "\r\n"
+		headers += string(name) + ": " + value + "\r\n"
 	}
 
 	str := fmt.Sprintf("%s %d\r\n%s\r\n", res.HttpVersion, res.StatusCode, headers)
@@ -70,14 +72,6 @@ func (res *Response) AsBytesWithoutBody() []byte {
 func (res *Response) AsBytes() []byte {
 	str := fmt.Sprintf("%s%s", res.AsBytesWithoutBody(), res.Body)
 	return []byte(str)
-}
-
-func RespondStatus(writer *bufio.Writer, status util.HttpStatusCode, closeConnection bool) {
-	res := New().WithStatus(status)
-	if closeConnection {
-		res.WithHeader(util.HeaderConnection, string(util.HttpConnectionClose))
-	}
-	res.Respond(writer)
 }
 
 func (res *Response) Respond(writer *bufio.Writer) {
@@ -100,6 +94,14 @@ func (res *Response) Respond(writer *bufio.Writer) {
 		writeFullyLog(writer, res.AsBytes())
 		flushLog(writer)
 	}
+}
+
+func RespondStatus(writer *bufio.Writer, status util.HttpStatusCode, closeConnection bool) {
+	res := New().WithStatus(status)
+	if closeConnection {
+		res.WithHeader(util.HeaderConnection, string(util.ConnectionClose))
+	}
+	res.Respond(writer)
 }
 
 func writeFullyLog(writer *bufio.Writer, bytes []byte) int {
