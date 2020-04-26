@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-const optionalWhiteSpace = " \t"
-
 type requestParser struct {
 	reader *bufio.Reader
 	writer *bufio.Writer
@@ -108,7 +106,7 @@ func (parser *requestParser) parseHeaders() (headers map[string]string, err erro
 		}
 
 		name := normalizeCase(parts[0])
-		value := strings.Trim(normalizeCase(parts[1]), optionalWhiteSpace)
+		value := strings.Trim(normalizeCase(parts[1]), util.RequestOWS)
 		if !isVisibleString(name) || !isValidHeaderValue(value) {
 			err = errors.New("invalid header")
 			return

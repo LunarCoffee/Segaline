@@ -100,7 +100,7 @@ func (res *Response) Respond(writer *bufio.Writer) {
 		flushLog(writer)
 	}
 
-	if res.StatusCode != StatusRequestTimeout {
+	if res.StatusCode != StatusRequestTimeout && res.StatusCode != StatusBadRequest {
 		log.Printf("(%d) %s %s %s\n", res.StatusCode, res.request.Method, &res.request.Uri, res.request.RemoteAddr)
 	}
 }

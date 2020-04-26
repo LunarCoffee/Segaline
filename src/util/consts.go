@@ -17,6 +17,7 @@ const (
 const (
 	RequestMaxContentLength = 65_536
 	RequestMaxURILength     = 32_768
+	RequestOWS              = " \t"
 )
 
 const (

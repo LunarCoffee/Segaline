@@ -78,17 +78,17 @@ const (
 	StatusRequestedRangeNotSatisfiable
 	StatusExpectationFailed
 	StatusImATeapot
-	StatusMisdirectedRequest              = 421
-	StatusUnprocessableEntity             = 422
-	StatusLocked                          = 423
-	StatusFailedDependency                = 424
-	StatusUpgradeRequired                 = 426
-	StatusPreconditionRequired            = 428
-	StatusTooManyRequests                 = 429
-	StatusRequestHeaderFieldsTooLarge     = 431
-	StatusConnectionClosedWithoutResponse = 444
-	StatusUnavailableForLegalReasons      = 451
-	StatusClientClosedRequest             = 499
+	StatusMisdirectedRequest              StatusCode = 421
+	StatusUnprocessableEntity             StatusCode = 422
+	StatusLocked                          StatusCode = 423
+	StatusFailedDependency                StatusCode = 424
+	StatusUpgradeRequired                 StatusCode = 426
+	StatusPreconditionRequired            StatusCode = 428
+	StatusTooManyRequests                 StatusCode = 429
+	StatusRequestHeaderFieldsTooLarge     StatusCode = 431
+	StatusConnectionClosedWithoutResponse StatusCode = 444
+	StatusUnavailableForLegalReasons      StatusCode = 451
+	StatusClientClosedRequest             StatusCode = 499
 )
 
 const (
@@ -101,9 +101,9 @@ const (
 	StatusVariantAlsoNegotiates
 	StatusInsufficientStorage
 	StatusLoopDetected
-	StatusNotExtended                   = 510
-	StatusNetworkAuthenticationRequired = 511
-	StatusNetworkConnectTimeoutError    = 599
+	StatusNotExtended                   StatusCode = 510
+	StatusNetworkAuthenticationRequired StatusCode = 511
+	StatusNetworkConnectTimeoutError    StatusCode = 599
 )
 
 const (
@@ -151,20 +151,21 @@ const (
 )
 
 const (
-	HeaderHost             Header = "host"
-	HeaderConnection       Header = "connection"
-	HeaderContentLength    Header = "content-length"
-	HeaderContentType      Header = "content-type"
-	HeaderTransferEncoding Header = "transfer-encoding"
-	HeaderTE               Header = "te"
-	HeaderUpgrade          Header = "upgrade"
-	HeaderVia              Header = "via"
-	HeaderLastModified     Header = "last-modified"
-	HeaderETag             Header = "etag"
-	HeaderExpect           Header = "expect"
-	HeaderServer           Header = "server"
-	HeaderDate             Header = "date"
-	HeaderAllow            Header = "allow"
+	HeaderHost              Header = "host"
+	HeaderConnection        Header = "connection"
+	HeaderContentLength     Header = "content-length"
+	HeaderContentType       Header = "content-type"
+	HeaderTransferEncoding  Header = "transfer-encoding"
+	HeaderLastModified      Header = "last-modified"
+	HeaderETag              Header = "etag"
+	HeaderExpect            Header = "expect"
+	HeaderServer            Header = "server"
+	HeaderDate              Header = "date"
+	HeaderAllow             Header = "allow"
+	HeaderIfMatch           Header = "if-match"
+	HeaderIfNoneMatch       Header = "if-none-match"
+	HeaderIfModifiedSince   Header = "if-modified-since"
+	HeaderIfUnmodifiedSince Header = "if-unmodified-since"
 )
 
 const (

@@ -120,7 +120,7 @@ func (server *FileServer) handleGetOrHeadRequest(req *http.Request, writer *bufi
 
 	res := http.NewResponse(req).WithStatus(http.StatusOK)
 	if len(content) <= util.ResponseMaxUnchunkedBody {
-		res.WithHeader(http.HeaderETag, "\"" + getETag(content) + "\"")
+		res.WithHeader(http.HeaderETag, "\""+getETag(content)+"\"")
 	}
 	if info, err := os.Stat(filePath); err == nil {
 		res.WithHeader(http.HeaderLastModified, formatTimeGMT(info.ModTime()))
@@ -129,13 +129,75 @@ func (server *FileServer) handleGetOrHeadRequest(req *http.Request, writer *bufi
 		res.WithBody(content, contentType)
 	}
 
-	res.Respond(writer)
-	return req.WillCloseConnection()
+	conditionalResult := server.conditionalHeadersSatisfied(req, res)
+	willClose := req.WillCloseConnection()
+	if conditionalResult == ConditionalHeadersFailed {
+		server.respondErrorTemplate(writer, req, http.StatusPreconditionFailed, willClose)
+	} else if conditionalResult == ConditionalHeadersNotModified {
+		server.respondErrorTemplate(writer, req, http.StatusNotModified, willClose)
+	} else {
+		res.Respond(writer)
+	}
+	return willClose
 }
 
 func (*FileServer) handleTraceRequest(req *http.Request, writer *bufio.Writer) bool {
 	http.NewResponse(req).WithStatus(http.StatusOK).WithBody(req.AsBytes(), http.MediaTypeHTTP).Respond(writer)
 	return req.WillCloseConnection()
+}
+
+func (*FileServer) conditionalHeadersSatisfied(req *http.Request, res *http.Response) (r ConditionalHeaderResult) {
+	r = ConditionalHeadersPassed
+
+	eTag, hasETag := res.Headers[http.HeaderETag]
+	lastModifiedString, hasLastModified := res.Headers[http.HeaderLastModified]
+	if !hasETag && !hasLastModified {
+		return ConditionalHeadersPassed
+	}
+	lastModified, err := parseTimeGMT(lastModifiedString)
+	timeValid := err == nil
+
+	if matchTagStrings, ok := req.Headers[string(http.HeaderIfMatch)]; ok && hasETag {
+		if matchTagStrings != "*" {
+			r = ConditionalHeadersPassed
+		} else {
+			r = ConditionalHeadersFailed
+			for _, tag := range strings.Split(matchTagStrings, ",") {
+				if strings.Trim(tag, util.RequestOWS) == eTag {
+					r = ConditionalHeadersPassed
+					break
+				}
+			}
+			if r == ConditionalHeadersFailed {
+				return
+			}
+		}
+	} else if since, ok := req.Headers[string(http.HeaderIfUnmodifiedSince)]; ok && hasLastModified && timeValid {
+		sinceTime, err := parseTimeGMT(since)
+		if err != nil || sinceTime.After(lastModified) || sinceTime.Equal(lastModified) {
+			r = ConditionalHeadersPassed
+		} else {
+			return ConditionalHeadersFailed
+		}
+	}
+
+	if matchTagStrings, ok := req.Headers[string(http.HeaderIfNoneMatch)]; ok && hasETag {
+		r = ConditionalHeadersNotModified
+		if matchTagStrings != "*" {
+			for _, tag := range strings.Split(matchTagStrings, ",") {
+				if strings.TrimPrefix(strings.Trim(tag, util.RequestOWS), "W/") != strings.TrimPrefix(eTag, "W/") {
+					return ConditionalHeadersPassed
+				}
+			}
+		}
+	} else if since, ok := req.Headers[string(http.HeaderIfModifiedSince)]; ok && hasLastModified && timeValid {
+		r = ConditionalHeadersNotModified
+		sinceTime, err := parseTimeGMT(since)
+		if err != nil || sinceTime.Before(lastModified) {
+			r = ConditionalHeadersPassed
+		}
+	}
+	return
 }
 
 func (server *FileServer) respondErrorTemplate(

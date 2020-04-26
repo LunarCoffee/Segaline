@@ -7,6 +7,14 @@ import (
 	"time"
 )
 
+type ConditionalHeaderResult int
+
+const (
+	ConditionalHeadersFailed ConditionalHeaderResult = iota
+	ConditionalHeadersNotModified
+	ConditionalHeadersPassed
+)
+
 func getETag(content []byte) string {
 	sha := sha1.New()
 	sha.Write(content)
@@ -15,4 +23,8 @@ func getETag(content []byte) string {
 
 func formatTimeGMT(t time.Time) string {
 	return t.UTC().Format(time.RFC1123[:len(time.RFC1123)-3]) + "GMT"
+}
+
+func parseTimeGMT(t string) (time.Time, error) {
+	return time.Parse(time.RFC1123[:len(time.RFC1123)-3]+"GMT", t)
 }
