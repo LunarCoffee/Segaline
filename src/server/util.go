@@ -10,9 +10,9 @@ import (
 type ConditionalHeaderResult int
 
 const (
-	ConditionalHeadersFailed ConditionalHeaderResult = iota
+	ConditionalHeadersPassed ConditionalHeaderResult = iota
 	ConditionalHeadersNotModified
-	ConditionalHeadersPassed
+	ConditionalHeadersFailed
 )
 
 func getETag(content []byte) string {

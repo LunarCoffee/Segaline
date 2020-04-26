@@ -113,10 +113,17 @@ func (parser *requestParser) parseHeaders() (headers map[string]string, err erro
 		}
 
 		if _, ok := headers[name]; ok {
-			err = errors.New("duplicate header")
-			return
+			switch Header(name) {
+			case HeaderTransferEncoding, HeaderIfMatch, HeaderIfNoneMatch, HeaderIfModifiedSince,
+				HeaderIfUnmodifiedSince:
+				headers[name] += ", " + value
+			default:
+				err = errors.New("duplicate header")
+				return
+			}
+		} else {
+			headers[name] = value
 		}
-		headers[name] = value
 	}
 	return
 }
